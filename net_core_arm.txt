@@ -1,0 +1,89 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "WebAppName": {
+            "defaultValue": "DefaultAppName",
+            "type": "String"
+        },
+        "AzureResourcelocation": {
+            "type": "String"
+        },
+        "ServerFarmAppServicePlan": {
+	    "defaultValue": "SIT-AppServicePlan",
+            "type": "String"
+	},
+	"serverFarmId": {
+            "defaultValue": "/subscriptions/a50f5222-6743-4c98-8d3c-1ae118161c97/resourceGroups/SIT-common-DEV/providers/Microsoft.Web/serverFarms/SIT-COM-PLAN",
+            "type": "String"
+        }
+    },
+    "variables": {
+		"AppServicePlan" : "[parameters('ServerFarmAppServicePlan')]",
+		"resourceGroupName" : "[toLower(resourceGroup().name)]",
+		"WebAppName" : "[parameters('WebAppName')]",
+		"config_WebAppName" : "[concat(resourceGroup().name, '-', concat(parameters('WebAppName'), '/web'))]"
+ 		},
+    "resources": [
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "WebApp",
+            "name": "[parameters('WebAppName')]",
+            "apiVersion": "2015-08-01",
+            "location": "[parameters('AzureResourcelocation')]",
+            "tags": {
+				"[concat('hidden-related:', parameters('serverFarmId'))]": "empty"
+            },
+            "properties": {
+                "name": "[parameters('WebAppName')]",
+                "serverFarmId": "[parameters('serverFarmId')]",
+                "kind": "WebApp",
+                "siteConfig": {
+                    "AlwaysOn": true,
+                    "appSettings": [
+                      {
+                        "name": "WEBSITE_TIME_ZONE",
+                        "value": "GMT Standard Time"
+                      },
+                      {
+                        "name": "CORECLR_ENABLE_PROFILING",
+                        "value": "1"
+                      },
+                      {
+                        "name": "CORECLR_PROFILER",
+                        "value": "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+                      },
+                      {
+                        "name": "CORECLR_PROFILER_PATH",
+                        "value": "D:\\Home\\site\\wwwroot\\newrelic\\NewRelic.Profiler.dll"
+                      },
+                      {
+                        "name": "CORECLR_NEWRELIC_HOME",
+                        "value": "D:\\Home\\site\\wwwroot\\newrelic"
+                      },
+                      {
+                        "name": "NEW_RELIC_APP_NAME",
+                        "value": "[parameters('WebAppName')]"
+                      },
+                      {
+                        "name": "NEW_RELIC_LICENSE_KEY",
+                        "value": "#{NEWRELIC_LICENSEKEY}"
+                      }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-08-01",
+                    "name": "Oakam.NewRelic.NetCore.Azure.WebSites",
+                    "type": "siteextensions",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', parameters('WebAppName'))]"
+                    ],
+                    "properties": { }
+                }
+            ]
+        }
+    ]
+}
+
